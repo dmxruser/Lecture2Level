@@ -2,6 +2,7 @@ import os
 from flask import Flask, flash, redirect, render_template, request, session, jsonify, send_file
 from werkzeug.utils import secure_filename
 import random
+import uuid
 
 
 from shelp import convert, load_song, calc_average, get_lenghts, speed_up
@@ -35,8 +36,10 @@ def get_upload_from_request():
     return file
 
 def prepare_upload(file):
-    filename = secure_filename(file.filename or "")
-    folder_name = os.path.splitext(filename)[0]
+    original_filename = secure_filename(file.filename or "")
+    original_stem, original_ext = os.path.splitext(original_filename)
+    folder_name = f"{original_stem}_{uuid.uuid4().hex[:8]}"
+    filename = f"{folder_name}{original_ext}"
     file_dir = os.path.join(UPLOAD_FOLDER, folder_name)
     os.makedirs(file_dir, exist_ok=True)
     filepath = os.path.join(file_dir, filename)
@@ -126,7 +129,10 @@ def mkdata():
 @app.route('/export', methods=['POST'])
 def export():
     data = request.form['data']
-    fileoutput = "test.gmd"
+    folder_name = f"export_{uuid.uuid4().hex[:8]}"
+    file_dir = os.path.join(UPLOAD_FOLDER, folder_name)
+    os.makedirs(file_dir, exist_ok=True)
+    fileoutput = os.path.join(file_dir, f"{folder_name}.gmd")
     encrypted_path = export_data(data, fileoutput)
     return jsonify({"message": "File processed and encrypted successfully.", "encrypted_file": encrypted_path})
 
