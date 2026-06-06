@@ -3,3 +3,5 @@ numpy
 librosa
 moviepy
 soundfile
+werkzeug
+gunicorn

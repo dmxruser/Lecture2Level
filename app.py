@@ -101,7 +101,10 @@ def analyze():
 
         speed = request.form.get('speed', type=float, default=1.0)
         filename, folder_name, file_dir, filepath = prepare_upload(file)
-        audio_filepath = convert_uploaded_file(filename, filepath)
+        try:
+            audio_filepath = convert_uploaded_file(filename, filepath)
+        except ValueError as e:
+            return render_template('index.html', err="No audio track in uploaded file.")
         audio_filepath = apply_speed_change(audio_filepath, file_dir, folder_name, speed)
         session['audio_path'] = audio_filepath
 
