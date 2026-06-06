@@ -6,7 +6,7 @@ import random
 
 from shelp import convert, load_song, calc_average, get_lenghts, speed_up
 from lhelp import make_data
-from fhelp import encrypt_file, output_file
+from fhelp import output_file
 
 app = Flask(__name__)
 app.secret_key = 'dev-secret-key-12345'
@@ -85,6 +85,10 @@ def write_gmd_file(file_dir, folder_name, level_data):
     output_file(os.path.join(file_dir, gmd_filename), level_data)
     return gmd_filename
 
+def export_data(data, fileoutput):
+    output_file(fileoutput, data)
+    return os.path.basename(fileoutput)
+
 @app.route('/analyze', methods=['POST', 'GET'])
 def analyze():
     if request.method == 'POST':
@@ -100,9 +104,10 @@ def analyze():
 
         lengths = analyze_audio(audio_filepath)
         level_data = build_level_data(lengths)
-        gmd_filename = write_gmd_file(file_dir, folder_name, level_data)
+        gmd_path = os.path.join(file_dir, f"{folder_name}.gmd")
+        export_filename = export_data(level_data, gmd_path)
 
-        return render_template('info.html', filename=gmd_filename, audio_filename=os.path.basename(audio_filepath))
+        return render_template('info.html', filename=export_filename, audio_filename=os.path.basename(audio_filepath))
     else:
         return redirect('/')
 
@@ -118,13 +123,11 @@ def mkdata():
 
     return build_level_data(lengths, distance)
 
-@app.route('/', methods=['POST'])
-def output(fileoutput, data):
+@app.route('/export', methods=['POST'])
+def export():
     data = request.form['data']
     fileoutput = "test.gmd"
-    output_file(fileoutput, data)
-    encrypted_path = encrypt_file(fileoutput, "encrypted_output.plist")
-    os.remove(fileoutput)
+    encrypted_path = export_data(data, fileoutput)
     return jsonify({"message": "File processed and encrypted successfully.", "encrypted_file": encrypted_path})
 
 @app.route('/download/<filename>')

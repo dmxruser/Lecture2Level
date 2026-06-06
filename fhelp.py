@@ -4,16 +4,11 @@ import re
 import gzip
 import base64
 
-def encrypt_file(filepath, output_path):
-    with open(filepath, 'rb') as f:
-        with gzip.open(f, 'rb') as gz:
-            data = gz.read()
-    with open(output_path, 'wb') as f:
-        f.write(data)
-        f.write(base64.urlsafe_b64encode(data))
-    return output_path
+def encrypt_data(data):
+    return base64.urlsafe_b64encode(gzip.compress(data.encode())).decode("ascii")
 
 def output_file(fileoutput, data):
+    data = encrypt_data(data)
     with open(fileoutput, 'w') as f:
         f.write(f"""<?xml version="1.0"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://apple.com">
