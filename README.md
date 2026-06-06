@@ -29,4 +29,6 @@ There are a total of 4 important files here; with some being much longer than ot
 
 ``app.py`` is your usual app.py; routing functions; which are easilly readable if you know the above functios used in previous files; so yeah; cool right?
 
-Yap Yap Yap THIS IS FINALY OVER OMG 869 WORDS
+## Notes
+https://www.youtube.com/watch?v=IUhiJ-BfpTw
+Yap Yap Yap THIS IS FINALY OVER OMG 860+ WORDS
