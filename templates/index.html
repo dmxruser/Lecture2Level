@@ -24,7 +24,7 @@
                 </ul>
                 <input type="hidden" name="speed" id="speed-input" value="1.0">
             </div>
-            <button id="submit-btn" class="btn btn-primary">Convert to level</button>
+            <button id="submit-btn" class="btn btn-primary" onclick="disableButton()">Convert to level</button>
         </div>
     </div>
 
@@ -95,5 +95,11 @@
                 });
             }
         });
+
+        function disableButton() {
+            document.getElementById('submit-btn').disabled = true;
+            document.getElementById('submit-btn').textContent = "Processing...";
+        }
+
     </script>
 {% endblock %}

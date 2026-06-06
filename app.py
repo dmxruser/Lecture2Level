@@ -28,61 +28,95 @@ PATHS = [
 def index():
     return render_template('index.html')
 
-@app.route('/analyze', methods=['POST'])
-def analyze():
-    file = request.files['file']
-    speed = request.form.get('speed', type=float, default=1.0)
+def get_upload_from_request():
+    file = request.files.get('file')
+    if file is None or not file.filename:
+        return None
+    return file
 
-    if not file.filename:
-        return redirect('/')
+def prepare_upload(file):
     filename = secure_filename(file.filename or "")
-    folder_name = filename.rsplit('.', 1)[0]
+    folder_name = os.path.splitext(filename)[0]
     file_dir = os.path.join(UPLOAD_FOLDER, folder_name)
     os.makedirs(file_dir, exist_ok=True)
     filepath = os.path.join(file_dir, filename)
-
     file.save(filepath)
+    return filename, folder_name, file_dir, filepath
+
+def convert_uploaded_file(filename, filepath):
     if filename.endswith('.mp4'):
         audio_filepath = convert(filepath)
         os.remove(filepath)
-    else:
-        audio_filepath = filepath
-    session['audio_path'] = audio_filepath
+        return audio_filepath
+    return filepath
 
+def apply_speed_change(audio_filepath, file_dir, folder_name, speed):
     if speed != 1.0:
         sped_up_path = os.path.join(file_dir, f"{folder_name}_sped_up.mp3")
         speed_up(audio_filepath, sped_up_path, speed)
         os.remove(audio_filepath)
-        audio_filepath = sped_up_path
+        return sped_up_path
+    return audio_filepath
 
+def analyze_audio(audio_filepath):
     y, sr = load_song(audio_filepath)
     avg = calc_average(y, sr)
-    lengths, special_avg, special_lh, special_lb = get_lenghts(y, sr, avg)
+    return get_lenghts(y, sr, avg)
 
-    result = mkdata(lengths, 0) 
-    
-    gmd_path = output_file(os.path.join(file_dir, f"{folder_name}.gmd"), result)
-    with open(f"{gmd_path}", 'r') as f:
-        file_data = f.read()
-    return render_template('info.html', filename=f"{folder_name}.gmd", audio_filename=os.path.basename(audio_filepath))
-
-@app.route('/mkdata', methods=['POST'])
-def mkdata(lengths, distance):
+def build_level_data(lengths, distance=0):
     text = []
     with open(LEVELS[0], 'r') as f:
         text.append(f.read())
     text.append(make_data(LEVELS[1], distance))
     distance += 270
+
     for level in lengths[1:]:
         ran_folder = random.randint(0, 2)
         ran_file = random.randint(1, 3)
         file_path = f"{PATHS[ran_folder]}/{ran_file}.txt"
-        
+
         text.append(make_data(file_path, distance))
         distance += 270
-    
-    level = "".join(text)
-    return level
+
+    return "".join(text)
+
+def write_gmd_file(file_dir, folder_name, level_data):
+    gmd_filename = f"{folder_name}.gmd"
+    output_file(os.path.join(file_dir, gmd_filename), level_data)
+    return gmd_filename
+
+@app.route('/analyze', methods=['POST', 'GET'])
+def analyze():
+    if request.method == 'POST':
+        file = get_upload_from_request()
+        if file is None:
+            return redirect('/')
+
+        speed = request.form.get('speed', type=float, default=1.0)
+        filename, folder_name, file_dir, filepath = prepare_upload(file)
+        audio_filepath = convert_uploaded_file(filename, filepath)
+        audio_filepath = apply_speed_change(audio_filepath, file_dir, folder_name, speed)
+        session['audio_path'] = audio_filepath
+
+        lengths = analyze_audio(audio_filepath)
+        level_data = build_level_data(lengths)
+        gmd_filename = write_gmd_file(file_dir, folder_name, level_data)
+
+        return render_template('info.html', filename=gmd_filename, audio_filename=os.path.basename(audio_filepath))
+    else:
+        return redirect('/')
+
+@app.route('/mkdata', methods=['POST'])
+def mkdata():
+    data = request.get_json(silent=True) or request.form
+    lengths = data.get('lengths', [])
+    distance = data.get('distance', 0)
+
+    if isinstance(lengths, str):
+        lengths = [int(length.strip()) for length in lengths.split(',') if length.strip()]
+    distance = int(distance)
+
+    return build_level_data(lengths, distance)
 
 @app.route('/', methods=['POST'])
 def output(fileoutput, data):
@@ -95,7 +129,6 @@ def output(fileoutput, data):
 
 @app.route('/download/<filename>')
 def download(filename):
-    # Reconstruct the original folder name by stripping '_sped_up' from the filename
     folder_name = filename.replace('_sped_up', '').rsplit('.', 1)[0]
     file_path = os.path.join(UPLOAD_FOLDER, folder_name, filename)
     return send_file(file_path, mimetype='application/octet-stream', as_attachment=True, download_name=filename)
