@@ -1,0 +1,99 @@
+{% extends 'layout.html' %}
+{% block content %}
+    <div class="upload-wrapper" style="text-align: center;">
+        <h2>Upload a lecture</h2>
+        <form action="/analyze" method="post" enctype="multipart/form-data" class="upload" id="my-dropzone">
+            <div class="dz-message" data-dz-message>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem; justify-content: center; align-items: center;">
+                    <span class="btn btn-secondary">Browse</span>
+                    <span id="file-name" style="font-weight: bold; margin-top: 5px;"></span>
+                    <span>OR drag an audio/video file here</span>
+                </div>
+            </div>
+        </form>
+        <div class="d-flex gap-2 justify-content-center align-items-center mt-4">
+            <div class="dropdown">
+                <button class="btn btn-secondary dropdown-toggle" type="button" id="speed-dropdown-btn" data-bs-toggle="dropdown" aria-expanded="false">
+                    1.0x Speed
+                </button>   
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item speed-opt" href="#" data-value="1.0">1.0x Speed</a></li>
+                    <li><a class="dropdown-item speed-opt" href="#" data-value="1.25">1.25x Speed</a></li>
+                    <li><a class="dropdown-item speed-opt" href="#" data-value="1.5">1.5x Speed</a></li>
+                    <li><a class="dropdown-item speed-opt" href="#" data-value="2.0">2.0x Speed</a></li>
+                </ul>
+                <input type="hidden" name="speed" id="speed-input" value="1.0">
+            </div>
+            <button id="submit-btn" class="btn btn-primary">Convert to level</button>
+        </div>
+    </div>
+
+    <link rel="stylesheet" href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css" type="text/css" />
+    <script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
+    <script>
+        // Set up dropdown option selection behavior
+        document.querySelectorAll('.speed-opt').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                const val = this.getAttribute('data-value');
+                document.getElementById('speed-input').value = val;
+                document.getElementById('speed-dropdown-btn').textContent = this.textContent;
+            });
+        });
+
+        Dropzone.autoDiscover = false;
+
+        const myDropzone = new Dropzone("#my-dropzone", {
+            url: "/analyze",
+            autoProcessQueue: false,
+            maxFiles: 1,
+            paramName: "file",
+            acceptedFiles: ".mp3,.mp4",
+            dictDefaultMessage: "Drag & Drop files here or click to browse",
+            init: function() {
+                const submitButton = document.querySelector("#submit-btn");
+                const wrapperThis = this;
+
+                submitButton.addEventListener("click", function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (wrapperThis.getQueuedFiles().length > 0) {
+                        wrapperThis.processQueue();
+                    } else {
+                        alert("Please select a file first.");
+                    }
+                });
+
+                this.on("sending", function(file, xhr, formData) {
+                    // Append the selected speed to the form upload data
+                    formData.append("speed", document.getElementById('speed-input').value);
+                });
+
+                this.on("addedfile", function(file) {
+                    if (wrapperThis.files.length > 1) {
+                        wrapperThis.removeFile(wrapperThis.files[0]);
+                    }
+                    document.getElementById('file-name').textContent = file.name;
+                });
+
+                this.on("removedfile", function() {
+                    if (wrapperThis.files.length === 0) {
+                        document.getElementById('file-name').textContent = "";
+                    }
+                });
+
+                this.on("success", function(file, response) {
+                    document.open();
+                    document.write(response);
+                    document.close();
+                });
+
+                this.on("error", function(file, response) {
+                    console.error(response);
+                    alert("Error: " + (typeof response === "string" ? response : "Upload failed"));
+                    wrapperThis.removeFile(file);
+                });
+            }
+        });
+    </script>
+{% endblock %}

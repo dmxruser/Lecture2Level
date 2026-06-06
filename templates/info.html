@@ -1,0 +1,19 @@
+{% extends 'layout.html' %}
+{% block content %}
+    <h1>Results</h1>
+    <h2>Download the following file:</h2>
+    <ul>
+        <a href="/download/{{ filename }}" download>{{ filename }}</a>
+    </ul>
+    <h2>Download the audio file here:</h2>
+    <ul>
+        <a href="/download/{{ audio_filename }}" download>{{ audio_filename }}</a>
+    </ul>
+    <p>Note: To replace a song; you will have to download Jukebox, and open the editor and click the disc icon;
+    so please, if you need help; the following links would be useful:</p>
+    <ul>
+        <li><a href="https://youtu.be/cDmiVrY4WX4?t=78s" target="_blank">How to import a downloaded song</a></li>
+        <li><a href="https://geode-sdk.org/" target="_blank">Geode</a></li>
+        <li><a href="https://geode-sdk.org/mods/fleym.nongd" target="_blank">Jukebox</a></li>
+
+{% endblock %}
