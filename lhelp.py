@@ -21,7 +21,3 @@ def make_data(file, distance):
         else:
             result.append(entry)
     return ';'.join(result)
-
-def append_level(file, text):
-    with open(file, 'a') as f:
-        f.write(str(text))
